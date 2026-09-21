@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @ObservedObject var model: TodoViewModel
     @State private var newProjectName: String = ""
+    @State private var isShowingNewProjectAlert = false
 
     var body: some View {
         NavigationSplitView {
@@ -13,6 +14,15 @@ struct ContentView: View {
         }
         .sheet(isPresented: $model.isEditing) {
             TaskEditorView(model: model)
+        }
+        .alert("New Project", isPresented: $isShowingNewProjectAlert) {
+            TextField("Project name", text: $newProjectName)
+            Button("Add") {
+                model.addProject(name: newProjectName)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Create a project to group related tasks.")
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -42,11 +52,24 @@ struct ContentView: View {
                 }
             }
 
-            Section("Projects") {
+            Section {
                 ForEach(model.projects) { project in
                     sidebarLabel(project.name,
                                  systemImage: "folder",
                                  value: .project(project.id))
+                }
+            } header: {
+                HStack {
+                    Text("Projects")
+                    Spacer()
+                    Button {
+                        newProjectName = ""
+                        isShowingNewProjectAlert = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("New Project")
                 }
             }
 

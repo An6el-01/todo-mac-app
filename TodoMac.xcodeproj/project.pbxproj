@@ -18,6 +18,7 @@
 		A10000000000000000000009 /* QueryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* QueryTests.swift */; };
 		A1000000000000000000000A /* DatabaseConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000A /* DatabaseConfigurationTests.swift */; };
 		A1000000000000000000000B /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000B /* XCTest.framework */; };
+		A1000000000000000000000C /* TodoViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000E /* TodoViewModelTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -44,6 +45,7 @@
 		A2000000000000000000000B /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 		A2000000000000000000000C /* TodoMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TodoMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000000000000000000000D /* TodoMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TodoMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A2000000000000000000000E /* TodoViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodoViewModelTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -119,6 +121,7 @@
 				A20000000000000000000008 /* TaskRepositoryTests.swift */,
 				A20000000000000000000009 /* QueryTests.swift */,
 				A2000000000000000000000A /* DatabaseConfigurationTests.swift */,
+				A2000000000000000000000E /* TodoViewModelTests.swift */,
 			);
 			path = TodoMacTests;
 			sourceTree = "<group>";
@@ -255,6 +258,7 @@
 				A10000000000000000000008 /* TaskRepositoryTests.swift in Sources */,
 				A10000000000000000000009 /* QueryTests.swift in Sources */,
 				A1000000000000000000000A /* DatabaseConfigurationTests.swift in Sources */,
+				A1000000000000000000000C /* TodoViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

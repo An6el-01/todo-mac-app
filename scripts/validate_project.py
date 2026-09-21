@@ -47,6 +47,7 @@ TEST_SOURCES = [
     "TodoMacTests/TaskRepositoryTests.swift",
     "TodoMacTests/QueryTests.swift",
     "TodoMacTests/DatabaseConfigurationTests.swift",
+    "TodoMacTests/TodoViewModelTests.swift",
 ]
 
 STATUSES = ("inbox", "next", "in_progress", "waiting", "completed")
