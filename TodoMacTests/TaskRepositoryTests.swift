@@ -99,6 +99,18 @@ final class TaskRepositoryTests: XCTestCase {
         XCTAssertFalse(task.archived)
     }
 
+    func testDeleteTaskPermanentlyRemovesTask() throws {
+        let task = try repo.createTask(title: "Delete me")
+
+        try repo.deleteTask(id: task.id)
+
+        XCTAssertThrowsError(try repo.taskByID(task.id))
+    }
+
+    func testDeleteMissingTaskThrows() {
+        XCTAssertThrowsError(try repo.deleteTask(id: "does-not-exist"))
+    }
+
     func testProjectCreationAndListing() throws {
         _ = try repo.createProject(name: "Thesis")
         _ = try repo.createProject(name: "Freelance")

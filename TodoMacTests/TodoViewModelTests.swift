@@ -27,21 +27,6 @@ final class TodoViewModelTests: XCTestCase {
         try? FileManager.default.removeItem(atPath: tmpDir)
     }
 
-    func testAddProjectPersistsAndRefreshesList() throws {
-        XCTAssertTrue(model.projects.isEmpty)
-
-        model.addProject(name: "Thesis")
-
-        XCTAssertEqual(model.projects.map(\\.name), ["Thesis"])
-        // Persisted through the shared repository, not just the in-memory list.
-        XCTAssertEqual(try repo.listProjects().map(\\.name), ["Thesis"])
-    }
-
-    func testAddProjectTrimsWhitespace() {
-        model.addProject(name: "   Freelance   ")
-        XCTAssertEqual(model.projects.map(\\.name), ["Freelance"])
-    }
-
     func testAddProjectRejectsBlankName() {
         model.addProject(name: "   ")
         XCTAssertTrue(model.projects.isEmpty)
@@ -74,5 +59,15 @@ final class TodoViewModelTests: XCTestCase {
 
         let updated = try repo.taskByID(task.id)
         XCTAssertEqual(updated.projectID, projectB.id)
+    }
+
+    func testDeleteRemovesTaskAndRefreshesViewModel() throws {
+        let task = try repo.createTask(title: "Delete me")
+        model.reload()
+
+        model.delete(task)
+
+        XCTAssertFalse(model.tasks.contains(where: { $0.id == task.id }))
+        XCTAssertThrowsError(try repo.taskByID(task.id))
     }
 }

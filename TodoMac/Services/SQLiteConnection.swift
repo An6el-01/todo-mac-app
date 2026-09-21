@@ -1,6 +1,8 @@
 import Foundation
 import SQLite3
 
+private let sqliteTransient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+
 // Dependency-free wrapper over the system libsqlite3. Uses the C API exposed
 // through the `SQLite3` clang module that ships with macOS, so no third-party
 // packages are required.
@@ -90,7 +92,7 @@ final class Statement {
     @discardableResult
     func bind(_ value: String?, at index: Int32) throws -> Statement {
         if let value {
-            guard sqlite3_bind_text(statement, index, value, -1, SQLITE_TRANSIENT) == SQLITE_OK else {
+            guard sqlite3_bind_text(statement, index, value, -1, sqliteTransient) == SQLITE_OK else {
                 throw SQLiteError.bind("bind text at \(index)")
             }
         } else {

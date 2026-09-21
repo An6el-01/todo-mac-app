@@ -177,6 +177,15 @@ final class TodoViewModel: ObservableObject {
         }
     }
 
+    func delete(_ task: Task) {
+        do {
+            try repository.deleteTask(id: task.id)
+            reload()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func addProject(name: String) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }

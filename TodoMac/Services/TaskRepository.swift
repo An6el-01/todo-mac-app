@@ -291,6 +291,12 @@ final class TaskRepository {
         return try taskByID(id)
     }
 
+    func deleteTask(id: String) throws {
+        _ = try taskByID(id)
+        let stmt = try db.prepare("DELETE FROM tasks WHERE id = ?")
+        try stmt.bind(id, at: 1).run()
+    }
+
     // MARK: - Queries
 
     private static let activeWhere = "archived = 0 AND status != 'completed'"

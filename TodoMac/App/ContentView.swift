@@ -2,8 +2,6 @@ import SwiftUI
 
 struct ContentView: View {
     @ObservedObject var model: TodoViewModel
-    @State private var newProjectName: String = ""
-    @State private var isShowingNewProjectAlert = false
 
     var body: some View {
         NavigationSplitView {
@@ -14,15 +12,6 @@ struct ContentView: View {
         }
         .sheet(isPresented: $model.isEditing) {
             TaskEditorView(model: model)
-        }
-        .alert("New Project", isPresented: $isShowingNewProjectAlert) {
-            TextField("Project name", text: $newProjectName)
-            Button("Add") {
-                model.addProject(name: newProjectName)
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Create a project to group related tasks.")
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -49,27 +38,6 @@ struct ContentView: View {
                     sidebarLabel(area.displayName,
                                  systemImage: "circle.fill",
                                  value: .area(area))
-                }
-            }
-
-            Section {
-                ForEach(model.projects) { project in
-                    sidebarLabel(project.name,
-                                 systemImage: "folder",
-                                 value: .project(project.id))
-                }
-            } header: {
-                HStack {
-                    Text("Projects")
-                    Spacer()
-                    Button {
-                        newProjectName = ""
-                        isShowingNewProjectAlert = true
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    .buttonStyle(.borderless)
-                    .help("New Project")
                 }
             }
 
@@ -132,6 +100,7 @@ struct TaskListView: View {
 struct TaskRow: View {
     @ObservedObject var model: TodoViewModel
     let task: Task
+    @State private var isShowingDeleteConfirmation = false
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
@@ -183,7 +152,20 @@ struct TaskRow: View {
                 Button("Complete") { model.complete(task) }
             }
             Divider()
-            Button("Archive", role: .destructive) { model.archive(task) }
+            Button("Archive") { model.archive(task) }
+            Button("Delete…", role: .destructive) {
+                isShowingDeleteConfirmation = true
+            }
+        }
+        .confirmationDialog(
+            "Delete \"\(task.title)\"?",
+            isPresented: $isShowingDeleteConfirmation
+        ) {
+            Button("Delete", role: .destructive) {
+                model.delete(task)
+            }
+        } message: {
+            Text("This action cannot be undone.")
         }
     }
 
@@ -200,59 +182,163 @@ struct TaskRow: View {
 struct TaskEditorView: View {
     @ObservedObject var model: TodoViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var isShowingDueDatePicker = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(model.editingTaskID == nil ? "New Task" : "Edit Task")
-                .font(.headline)
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                Image(systemName: model.editingTaskID == nil ? "plus.circle.fill" : "pencil.circle.fill")
+                    .font(.system(size: 28))
+                    .foregroundStyle(.tint)
 
-            TextField("Title", text: $model.draftTitle)
-                .textFieldStyle(.roundedBorder)
-                .font(.title3)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(model.editingTaskID == nil ? "New Task" : "Edit Task")
+                        .font(.title2.weight(.semibold))
+                    Text(model.editingTaskID == nil ? "Capture what needs to get done." : "Update the task details below.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
 
-            TextField("Notes", text: $model.draftNotes, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
-                .lineLimit(3...6)
+                Spacer()
+            }
+            .padding(.bottom, 20)
 
-            HStack(spacing: 16) {
-                Picker("Status", selection: $model.draftStatus) {
-                    ForEach(TaskStatus.allCases, id: \.self) { status in
-                        Text(status.rawValue.replacingOccurrences(of: "_", with: " ")).tag(status)
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 7) {
+                    fieldLabel("Task")
+                    TextField("What needs to be done?", text: $model.draftTitle)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.body)
+                        .controlSize(.large)
+                }
+
+                VStack(alignment: .leading, spacing: 7) {
+                    fieldLabel("Notes")
+                    TextField("Add details or context…", text: $model.draftNotes, axis: .vertical)
+                        .textFieldStyle(.roundedBorder)
+                        .lineLimit(3...5)
+                }
+            }
+            .padding(16)
+            .background(Color.secondary.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
+
+            VStack(spacing: 14) {
+                HStack(alignment: .top, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 7) {
+                        fieldLabel("Status")
+                        Picker("Status", selection: $model.draftStatus) {
+                            ForEach(TaskStatus.allCases, id: \.self) { status in
+                                Text(status.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
+                                    .tag(status)
+                            }
+                        }
+                        .labelsHidden()
+                        .frame(maxWidth: .infinity)
+                    }
+
+                    VStack(alignment: .leading, spacing: 7) {
+                        fieldLabel("Priority")
+                        Picker("Priority", selection: $model.draftPriority) {
+                            ForEach(TaskPriority.allCases, id: \.self) { priority in
+                                Text(priority.rawValue.capitalized).tag(priority)
+                            }
+                        }
+                        .labelsHidden()
+                        .frame(maxWidth: .infinity)
                     }
                 }
 
-                Picker("Priority", selection: $model.draftPriority) {
-                    ForEach(TaskPriority.allCases, id: \.self) { priority in
-                        Text(priority.rawValue).tag(priority)
+                HStack(alignment: .top, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 7) {
+                        fieldLabel("Area")
+                        Picker("Area", selection: $model.draftArea) {
+                            Text("None").tag(TaskArea?.none)
+                            ForEach(TaskArea.allCases, id: \.self) { area in
+                                Text(area.displayName).tag(TaskArea?.some(area))
+                            }
+                        }
+                        .labelsHidden()
+                        .frame(maxWidth: .infinity)
+                    }
+
+                    VStack(alignment: .leading, spacing: 7) {
+                        fieldLabel("Due Date")
+
+                        Button {
+                            isShowingDueDatePicker = true
+                        } label: {
+                            HStack(spacing: 10) {
+                                Text(dueDateLabel)
+                                    .lineLimit(1)
+                                    .foregroundStyle(model.draftDueDate.isEmpty ? .secondary : .primary)
+
+                                Spacer()
+
+                                Image(systemName: "calendar")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.horizontal, 12)
+                            .frame(maxWidth: .infinity, minHeight: 32)
+                            .background(.quaternary, in: RoundedRectangle(cornerRadius: 7))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 7)
+                                    .stroke(isShowingDueDatePicker ? Color.accentColor : Color.secondary.opacity(0.18), lineWidth: 1)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .popover(isPresented: $isShowingDueDatePicker, arrowEdge: .bottom) {
+                            VStack(spacing: 12) {
+                                HStack {
+                                    Text("Choose a due date")
+                                        .font(.headline)
+
+                                    Spacer()
+
+                                    Button {
+                                        isShowingDueDatePicker = false
+                                    } label: {
+                                        Image(systemName: "xmark")
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .help("Close")
+                                }
+
+                                DatePicker(
+                                    "Due Date",
+                                    selection: dueDate,
+                                    displayedComponents: .date
+                                )
+                                .labelsHidden()
+                                .datePickerStyle(.graphical)
+                                .frame(width: 280)
+
+                                Divider()
+
+                                HStack {
+                                    Spacer()
+                                    Button("Cancel") {
+                                        isShowingDueDatePicker = false
+                                    }
+                                }
+                            }
+                            .padding(16)
+                        }
                     }
                 }
             }
+            .controlSize(.large)
+            .padding(.top, 18)
 
-            HStack(spacing: 16) {
-                Picker("Area", selection: $model.draftArea) {
-                    Text("None").tag(TaskArea?.none)
-                    ForEach(TaskArea.allCases, id: \.self) { area in
-                        Text(area.displayName).tag(TaskArea?.some(area))
-                    }
-                }
-
-                Picker("Project", selection: $model.draftProjectID) {
-                    Text("None").tag(String?.none)
-                    ForEach(model.projects) { project in
-                        Text(project.name).tag(String?.some(project.id))
-                    }
-                }
-            }
-
-            HStack(spacing: 16) {
-                TextField("Scheduled (YYYY-MM-DD)", text: $model.draftScheduledDate)
-                    .textFieldStyle(.roundedBorder)
-                TextField("Due (YYYY-MM-DD)", text: $model.draftDueDate)
-                    .textFieldStyle(.roundedBorder)
-            }
+            Divider()
+                .padding(.vertical, 18)
 
             HStack {
+                Text("Press ⌘↩ to save")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+
                 Spacer()
+
                 Button("Cancel") { dismiss() }
                     .keyboardShortcut(.cancelAction)
                 Button("Save") {
@@ -263,7 +349,48 @@ struct TaskEditorView: View {
                 .disabled(model.draftTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        .padding(20)
-        .frame(width: 460)
+        .padding(24)
+        .frame(width: 520)
+    }
+
+    private func fieldLabel(_ title: LocalizedStringKey) -> some View {
+        Text(title)
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(.secondary)
+    }
+
+    private var dueDate: Binding<Date> {
+        Binding(
+            get: {
+                parsedDate(model.draftDueDate) ?? Date()
+            },
+            set: { newDate in
+                model.draftDueDate = formattedDate(newDate)
+                isShowingDueDatePicker = false
+            }
+        )
+    }
+
+    private var dueDateLabel: String {
+        guard let date = parsedDate(model.draftDueDate) else {
+            return "Pick a date"
+        }
+        return date.formatted(date: .abbreviated, time: .omitted)
+    }
+
+    private func parsedDate(_ value: String) -> Date? {
+        dateFormatter.date(from: value)
+    }
+
+    private func formattedDate(_ date: Date) -> String {
+        dateFormatter.string(from: date)
+    }
+
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
     }
 }
